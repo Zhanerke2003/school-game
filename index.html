@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Моя школа — интерактивная игра</title>
+<style>
+:root{--bg:#f5f7ff;--card:#fff;--text:#263248;--muted:#697386;--accent:#667eea;--ok:#25a55f;--bad:#e55353}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#edf5ff,#fff8ec);color:var(--text)}
+.app{max-width:760px;margin:auto;padding:18px 15px 40px}.top{text-align:center}.logo{font-size:48px}.title{font-size:30px;font-weight:800;margin:4px}.subtitle{color:var(--muted)}
+.card{background:var(--card);border-radius:26px;padding:22px;margin-top:18px;box-shadow:0 12px 35px #26324816}
+.progress{height:9px;background:#e8ebf2;border-radius:10px;overflow:hidden}.progress span{display:block;height:100%;background:var(--accent);transition:.3s}
+.meta{display:flex;justify-content:space-between;color:var(--muted);margin:12px 0}
+.question{text-align:center;font-size:25px;font-weight:800;line-height:1.3;margin:22px 0}
+.visual{font-size:75px;text-align:center;margin:8px}
+.answers{display:grid;gap:12px}.ans{background:#f2f5ff;border:2px solid transparent;text-align:left}.ans:hover{border-color:#aab6ff}
+.ans.correct{background:#dff7e8;border-color:var(--ok)}.ans.wrong{background:#ffe3e3;border-color:var(--bad)}
+.feedback{text-align:center;min-height:29px;font-weight:700;margin:15px}.next,.start{width:100%;background:#263248;color:#fff}
+.result{text-align:center}.big{font-size:70px}.score{font-size:28px;font-weight:800}
+button{border:0;border-radius:16px;padding:15px;font-size:17px;cursor:pointer}
+.hidden{display:none}.pill{display:inline-block;padding:7px 12px;border-radius:20px;background:#eef1ff;color:#5967c8;font-size:14px;margin:3px}
+@media(max-width:500px){.title{font-size:25px}.question{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="top"><div class="logo">🏫</div><div class="title">Моя школа, мой класс</div><div class="subtitle">Интерактивная игра для учеников</div></div>
+
+<div class="card" id="intro">
+<p style="text-align:center"><span class="pill">Русский язык</span><span class="pill">Школа</span><span class="pill">Словарный запас</span></p>
+<h2 style="text-align:center">Готовы? 🎯</h2>
+<p style="text-align:center;color:#697386">Отвечай на вопросы, набирай баллы и в конце узнай свой результат.</p>
+<button class="start" onclick="startGame()">Начать игру ▶</button>
+</div>
+
+<div class="card hidden" id="game">
+<div class="progress"><span id="bar"></span></div>
+<div class="meta"><span id="counter"></span><span id="points"></span></div>
+<div id="task"></div>
+<div class="feedback" id="feedback"></div>
+<button class="next hidden" id="next" onclick="nextTask()">Следующее задание →</button>
+</div>
+
+<div class="card result hidden" id="result"></div>
+</div>
+
+<script>
+const questions=[
+{emoji:"🧑‍🏫",q:"Кто это?",a:["Учитель","Ученик","Директор","Врач"],c:0},
+{emoji:"👧",q:"Кто это?",a:["Учитель","Ученик","Ученик/ученица","Директор"],c:2},
+{emoji:"🟩",q:"Что это?",a:["Доска","Шкаф","Стол","Окно"],c:0},
+{emoji:"🪑",q:"Что это?",a:["Стул","Шкаф","Доска","Дверь"],c:0},
+{emoji:"📚",q:"Что это?",a:["Книги","Окно","Школа","Стул"],c:0},
+{emoji:"🏫",q:"Где учатся ученики?",a:["В школе","В магазине","В больнице","В кафе"],c:0},
+{q:"Выбери правильное сочетание:",a:["мой школа","моя школа","моё школа","мои школа"],c:1},
+{q:"Выбери правильное сочетание:",a:["моя класс","мой класс","моё класс","мои класс"],c:1},
+{q:"Выбери правильное сочетание:",a:["мой учитель","моя учитель","моё учитель","мои учитель"],c:0},
+{q:"Продолжи: «Меня … Анна». ",a:["зовут","зовём","зовёшь","зовёте"],c:0},
+{q:"Продолжи: «Мне … лет».",a:["8","зовут","имя","ученик"],c:0},
+{q:"Ответь правильно: «Тебе нравится школа?»",a:["Да, мне нравится школа.","Да, меня нравится школа.","Да, я нравится школа.","Мне зовут школа."],c:0},
+{q:"Выбери правильное предложение:",a:["Это мой класс.","Это моя класс.","Это моё класс.","Это мои класс."],c:0},
+{q:"Выбери правильное предложение:",a:["Это моя школа.","Это мой школа.","Это моё школа.","Это мои школа."],c:0}
+];
+
+let n=0,score=0,locked=false;
+function startGame(){document.getElementById('intro').classList.add('hidden');document.getElementById('game').classList.remove('hidden');show()}
+function show(){
+locked=false;let x=questions[n];
+document.getElementById('counter').textContent=`Задание ${n+1} из ${questions.length}`;
+document.getElementById('points').textContent=`⭐ ${score}`;
+document.getElementById('bar').style.width=(n/questions.length*100)+"%";
+document.getElementById('feedback').textContent="";
+document.getElementById('next').classList.add('hidden');
+document.getElementById('task').innerHTML=(x.emoji?`<div class="visual">${x.emoji}</div>`:"")+`<div class="question">${x.q}</div><div class="answers">${x.a.map((v,i)=>`<button class="ans" onclick="check(${i})">${v}</button>`).join("")}</div>`;
+}
+function check(i){
+if(locked)return;locked=true;let x=questions[n],btns=[...document.querySelectorAll(".ans")];
+btns.forEach((b,k)=>{b.disabled=true;if(k===x.c)b.classList.add("correct");if(k===i&&i!==x.c)b.classList.add("wrong")});
+if(i===x.c){score++;document.getElementById('feedback').textContent="✅ Правильно! Отлично!"}
+else document.getElementById('feedback').textContent="💡 Правильный ответ: "+x.a[x.c];
+document.getElementById('points').textContent=`⭐ ${score}`;
+document.getElementById('next').classList.remove('hidden');
+}
+function nextTask(){n++;if(n<questions.length)show();else finish()}
+function finish(){
+document.getElementById('game').classList.add('hidden');let r=document.getElementById('result');r.classList.remove('hidden');
+let percent=Math.round(score/questions.length*100),msg=percent>=90?"Превосходно! 🌟":percent>=70?"Очень хорошо! 👏":percent>=50?"Хорошая работа! 💪":"Попробуй ещё раз! 🌱";
+r.innerHTML=`<div class="big">🏆</div><h2>${msg}</h2><div class="score">${score} / ${questions.length}</div><p>Правильных ответов: ${percent}%</p><button class="start" onclick="location.reload()">🔄 Играть снова</button>`;
+}
+</script>
+</body>
+</html>
